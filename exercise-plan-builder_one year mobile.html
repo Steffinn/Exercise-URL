@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IRONLOG">
+<meta name="theme-color" content="#171614">
+<meta name="mobile-web-app-capable" content="yes">
+<title>IRONLOG — Training & Nutrition Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #171614;
+    --bg-panel: #1f1e1b;
+    --bg-card: #262420;
+    --line: #3a372f;
+    --chalk: #ede8de;
+    --chalk-dim: #a8a297;
+    --iron: #e8622c;
+    --iron-dim: #7a3a20;
+    --steel: #5c7a82;
+    --sage: #7f9a6f;
+    --warn: #b23a2e;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent;}
+  html{ height:-webkit-fill-available; }
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(232,98,44,0.05), transparent 40%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+    color: var(--chalk);
+    font-family: 'Oswald', sans-serif;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+  }
+  button, .day-tab, .chip, .hcell, .ex-item, .mp-opt{ touch-action: manipulation; }
+  button:active{ transform: scale(0.97); }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  .display{ font-family:'Bebas Neue', sans-serif; letter-spacing: 0.03em; }
+
+  header{
+    border-bottom: 1px solid var(--line);
+    padding: 18px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap: wrap; gap: 14px;
+  }
+  header .brand{ display:flex; align-items:baseline; gap:12px; }
+  header .brand h1{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 38px;
+    letter-spacing: 0.06em;
+    color: var(--chalk);
+  }
+  header .brand h1 span{ color: var(--iron); }
+  header .brand .tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--chalk-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-left: 1px solid var(--line);
+    padding-left: 12px;
+  }
+  .mode-switch{ display:flex; border:1px solid var(--line); border-radius: 20px; overflow:hidden; }
+  .mode-switch button{ border:none; border-radius:0; padding: 8px 18px; font-size:12px; background: transparent; color: var(--chalk-dim); }
+  .mode-switch button.active{ background: var(--iron); color:#17161a; }
+  .mode-switch button.active.nutrition-active{ background: var(--sage); color:#14170f; }
+  .mode-switch button:hover{ border-color:transparent; }
+
+  .actions{ display:flex; gap:8px; flex-wrap: wrap; }
+  button{
+    font-family:'Oswald', sans-serif; font-weight:600; font-size: 13px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    background: transparent; color: var(--chalk);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 9px 14px; cursor:pointer; transition: all .15s ease;
+  }
+  button:hover{ border-color: var(--iron); color: var(--iron); }
+  button:focus-visible{ outline: 2px solid var(--iron); outline-offset:2px; }
+  button.primary{ background: var(--iron); color: #17161a; border-color: var(--iron); }
+  button.primary:hover{ background: #f07344; color:#17161a; }
+  button.danger:hover{ border-color: var(--warn); color: var(--warn); }
+  button.small{ padding: 5px 9px; font-size: 11px; }
+  button.icon-btn{ padding: 5px 11px; font-size:14px; }
+
+  .layout{ display:grid; grid-template-columns: 300px 1fr; gap: 0; min-height: calc(100vh - 90px); }
+
+  .btnLibraryToggle{ display:none; }
+
+  .drawer-backdrop{
+    display:none; position: fixed; inset:0; background: rgba(0,0,0,0.5); z-index: 55;
+  }
+  .drawer-backdrop.show{ display:block; }
+
+  .more-wrap{ position:relative; }
+  .more-toggle{ display:none; }
+  .more-menu{ display:contents; }
+
+  @media (max-width: 900px){
+    header{
+      position:sticky; top:0; z-index:80; background: var(--bg);
+      padding-top: calc(18px + env(safe-area-inset-top));
+      padding-left: calc(28px + env(safe-area-inset-left));
+      padding-right: calc(28px + env(safe-area-inset-right));
+    }
+    .library{ padding-top: calc(20px + env(safe-area-inset-top)); }
+    .layout{ grid-template-columns: 1fr; }
+    .btnLibraryToggle{ display:inline-flex; align-items:center; gap:6px; }
+    .library{
+      position: fixed; top:0; left:0; bottom:0; width: min(86vw, 340px);
+      z-index: 60; transform: translateX(-100%);
+      transition: transform .22s ease;
+      box-shadow: 8px 0 24px rgba(0,0,0,0.4);
+      overflow-y: auto;
+      padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    }
+    .library.drawer-open{ transform: translateX(0); }
+    .library .drawer-close{ display:flex; }
+
+    .more-toggle{ display:inline-flex; }
+    .more-menu{
+      display:none; position:absolute; top:calc(100% + 6px); right:0;
+      flex-direction:column; background: var(--bg-panel); border:1px solid var(--line);
+      border-radius: var(--radius); padding:6px; gap:6px; z-index:65; min-width:170px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+    }
+    .more-menu.open{ display:flex; }
+    .more-menu button{ width:100%; text-align:left; }
+
+    input[type=text], input[type=number], input[type=date], select, textarea{ font-size:16px; }
+    .chip{ padding:8px 12px; font-size:11px; }
+    .remove-card{ padding:8px; font-size:20px; }
+    .mp-opt, button.small{ min-height:38px; }
+  }
+  .library .drawer-close{ display:none; margin-bottom: 14px; }
+
+  .meal-picker-sheet{
+    position: fixed; left:50%; bottom:0; transform: translateX(-50%);
+    width: min(94vw, 420px);
+    background: var(--bg-panel); border: 1px solid var(--line); border-bottom:none;
+    border-radius: 10px 10px 0 0; padding: 16px 18px calc(16px + env(safe-area-inset-bottom));
+    z-index: 70; box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
+  }
+  .meal-picker-sheet .mp-title{
+    font-family:'JetBrains Mono', monospace; font-size:12px; color: var(--chalk-dim);
+    margin-bottom: 10px; text-transform: uppercase; letter-spacing:0.04em;
+  }
+  .meal-picker-sheet .mp-options{ display:grid; grid-template-columns: repeat(2,1fr); gap:8px; }
+  .meal-picker-sheet .mp-opt{ border-color: var(--sage); color: var(--sage); padding: 12px 8px; }
+  .meal-picker-sheet .mp-opt:hover{ background: rgba(127,154,111,0.12); }
+
+  @media (max-width: 480px){
+    header{ padding: 14px 16px; }
+    header .brand h1{ font-size: 30px; }
+    header .brand .tag{ display:none; }
+    .plan-area{ padding: 14px 16px 60px; }
+    .library{ width: 88vw; }
+    button{ font-size: 12px; padding: 9px 12px; }
+    button.small{ padding: 8px 10px; font-size: 11px; }
+    .day-header h2, .day-header #dayTitleNutri{ font-size: 22px; }
+  }
+
+  .library{ border-right: 1px solid var(--line); padding: 20px; background: var(--bg-panel); }
+  .library h2{ font-family:'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.05em; color: var(--chalk-dim); margin-bottom: 12px; }
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    width:100%; background: var(--bg-card); border: 1px solid var(--line); color: var(--chalk);
+    padding: 8px 10px; border-radius: var(--radius); font-family: 'Oswald', sans-serif; font-size: 13px;
+  }
+  input[type=date]{ font-family:'JetBrains Mono', monospace; font-size:12px; color-scheme: dark; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible{ outline: 2px solid var(--iron); outline-offset: 1px; }
+  .search-row{ margin-bottom: 10px; }
+  .filter-row{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom: 14px; }
+  .chip{
+    font-family:'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 5px 9px; border: 1px solid var(--line); border-radius: 20px; color: var(--chalk-dim); cursor:pointer; user-select:none;
+  }
+  .chip.active{ border-color: var(--iron); color: var(--iron); background: rgba(232,98,44,0.08); }
+  .chip.active.nutrition{ border-color: var(--sage); color: var(--sage); background: rgba(127,154,111,0.1); }
+
+  .ex-list{ display:flex; flex-direction: column; gap: 6px; max-height: calc(100vh - 400px); overflow-y: auto; padding-right: 4px; }
+  .ex-list::-webkit-scrollbar{ width: 6px; }
+  .ex-list::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 4px; }
+
+  .ex-item{ background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); padding: 9px 10px; cursor: grab; display:flex; flex-direction:column; gap:3px; transition: border-color .15s ease; }
+  .ex-item:hover{ border-color: var(--steel); }
+  .ex-item.food-item:hover{ border-color: var(--sage); }
+  .ex-item .name{ font-size: 14px; font-weight: 500; }
+  .ex-item .meta{ font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+  .ex-item.dragging{ opacity: 0.4; }
+
+  .add-custom{ margin-top: 14px; border-top: 1px solid var(--line); padding-top: 14px; display:flex; flex-direction:column; gap:8px; }
+  .add-custom .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+  .add-custom .row4{ display:grid; grid-template-columns: repeat(4,1fr); gap:6px; }
+
+  .plan-area{ padding: 20px 28px 60px; }
+
+  .date-nav{ display:flex; align-items:center; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .date-nav input[type=date]{ width:auto; }
+
+  .week-strip{ display:grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 22px; }
+  @media (max-width: 700px){
+    .week-strip{
+      display:flex; overflow-x:auto; scroll-snap-type:x proximity;
+      -webkit-overflow-scrolling:touch; padding-bottom:4px;
+    }
+    .week-strip .day-tab{ flex: 0 0 76px; scroll-snap-align:center; }
+  }
+  .day-tab{ background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px; text-align:center; cursor:pointer; transition: all .15s ease; position:relative; }
+  .day-tab:hover{ border-color: var(--steel); }
+  .day-tab.active{ border-color: var(--iron); background: rgba(232,98,44,0.07); }
+  .day-tab.active.nutrition-active{ border-color: var(--sage); background: rgba(127,154,111,0.09); }
+  .day-tab.is-today::after{ content:''; position:absolute; top:5px; right:6px; width:5px; height:5px; border-radius:50%; background: var(--iron); }
+  .day-tab .dname{ font-family:'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.05em; }
+  .day-tab .ddate{ font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--chalk-dim); margin-top:1px; }
+  .day-tab .dcount{ font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--chalk-dim); margin-top: 2px; }
+  .load-bar{ height: 3px; background: var(--line); border-radius: 2px; margin-top: 6px; overflow:hidden; }
+  .load-bar > div{ height:100%; background: var(--iron); transition: width .3s ease; }
+  .load-bar.nutrition > div{ background: var(--sage); }
+
+  .day-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+  .day-header h2{ font-family:'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 0.03em; }
+  .day-header .day-meta{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--chalk-dim); text-transform: uppercase; }
+  .label-input{ background:transparent; border:none; border-bottom: 1px dashed var(--line); color: var(--chalk-dim); font-family:'JetBrains Mono', monospace; font-size: 12px; padding: 3px 0; width: 220px; }
+  .label-input:focus-visible{ outline:none; border-bottom-color: var(--iron); }
+
+  .drop-zone{ min-height: 90px; border: 1px dashed var(--line); border-radius: var(--radius); padding: 8px; display:flex; flex-direction:column; gap:10px; transition: border-color .15s ease, background .15s ease; }
+  .drop-zone.drag-over{ border-color: var(--iron); background: rgba(232,98,44,0.05); }
+  .drop-zone.drag-over.nutrition{ border-color: var(--sage); background: rgba(127,154,111,0.06); }
+  .drop-zone .empty-hint{ margin:auto; color: var(--chalk-dim); font-family:'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; text-align:center; padding: 20px; }
+
+  .plan-card{ background: var(--bg-card); border: 1px solid var(--line); border-left: 3px solid var(--steel); border-radius: var(--radius); padding: 12px 14px; display:grid; grid-template-columns: 1fr auto; gap: 10px; }
+  .plan-card.compound{ border-left-color: var(--iron); }
+  .plan-card .top-row{ display:flex; align-items:center; justify-content:space-between; grid-column: 1 / -1; }
+  .plan-card .ex-title, .food-card .ex-title{ font-size: 16px; font-weight:600; }
+  .plan-card .ex-sub, .food-card .ex-sub{ font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--chalk-dim); text-transform: uppercase; }
+  .field-grid{ display:grid; grid-template-columns: repeat(4, minmax(60px,1fr)) 1.6fr; gap: 8px; grid-column: 1 / -1; }
+  @media (max-width: 640px){
+    .field-grid{ grid-template-columns: repeat(2, 1fr); }
+    .field-grid .field:last-child{ grid-column: 1 / -1; }
+  }
+  .field{ display:flex; flex-direction:column; gap:3px; }
+  .field label{ font-family:'JetBrains Mono', monospace; font-size: 9px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+  .field input{ padding: 6px 8px; font-family:'JetBrains Mono', monospace; font-size: 13px; }
+  .plate-bar{ grid-column: 1 / -1; height: 5px; background: var(--line); border-radius: 3px; overflow:hidden; }
+  .plate-bar > div{ height:100%; background: linear-gradient(90deg, var(--iron-dim), var(--iron)); }
+  .remove-card{ align-self:start; background:none; border:none; color: var(--chalk-dim); font-size: 18px; cursor:pointer; padding: 0 4px; line-height:1; }
+  .remove-card:hover{ color: var(--warn); }
+
+  .food-card{ background: var(--bg-card); border: 1px solid var(--line); border-left: 3px solid var(--sage); border-radius: var(--radius); padding: 10px 14px; display:flex; flex-direction:column; gap:8px; }
+  .food-macros{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .food-macros .field{ width: 100px; }
+  .macro-readout{ display:flex; gap:12px; font-size:12px; color: var(--chalk-dim); }
+  .macro-readout b{ color: var(--chalk); }
+
+  .meal-section{ margin-bottom: 18px; }
+  .meal-section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .meal-section-head h3{ font-family:'Bebas Neue', sans-serif; font-size: 19px; letter-spacing:0.04em; color: var(--sage); }
+  .meal-kcal{ font-size:11px; color: var(--chalk-dim); }
+
+  .macro-targets{ display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:20px; }
+  @media (max-width: 700px){ .macro-targets{ grid-template-columns: repeat(2,1fr); } }
+  .macro-target-card{ background: var(--bg-panel); border:1px solid var(--line); border-radius: var(--radius); padding:10px 12px; }
+  .macro-target-card .row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .macro-target-card .name{ font-size:12px; text-transform:uppercase; letter-spacing:0.05em; color: var(--chalk-dim); }
+  .macro-target-card .value{ font-size:13px; }
+  .macro-target-card .target-input{ width:52px; display:inline-block; padding:2px 4px; text-align:right; border:none; border-bottom:1px dashed var(--line); background:transparent; }
+  .macro-target-card .bar{ height:5px; background: var(--line); border-radius:3px; overflow:hidden; }
+  .macro-target-card .bar > div{ height:100%; background: var(--sage); }
+  .macro-target-card.calories .bar > div{ background: var(--iron); }
+
+  .summary-strip{ margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; display:flex; gap: 26px; flex-wrap: wrap; }
+  .summary-strip .stat .num{ font-family:'Bebas Neue', sans-serif; font-size: 26px; color: var(--iron); }
+  .summary-strip.nutrition .stat .num{ color: var(--sage); }
+  .summary-strip .stat .lbl{ font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .history-controls{ display:flex; align-items:center; gap:14px; margin-bottom:18px; flex-wrap:wrap; }
+  .history-controls h2{ font-family:'Bebas Neue', sans-serif; font-size: 28px; letter-spacing:0.05em; }
+  .history-controls .day-meta{ font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--chalk-dim); text-transform:uppercase; }
+  .history-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; }
+  @media (max-width:1100px){ .history-grid{ grid-template-columns: repeat(3,1fr);} }
+  @media (max-width:800px){ .history-grid{ grid-template-columns: repeat(2,1fr);} }
+  @media (max-width:520px){ .history-grid{ grid-template-columns: 1fr;} }
+  .history-month{ background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius); padding:10px; }
+  .hmonth-title{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--chalk-dim); margin-bottom:8px; font-family:'JetBrains Mono', monospace; }
+  .hmonth-grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap:3px; }
+  .hcell{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono', monospace; font-size:9px; color: var(--chalk-dim); background: var(--bg-card); border-radius:2px; cursor:pointer; }
+  .hcell.empty{ background:transparent; cursor:default; }
+  .hcell.active{ color: var(--chalk); }
+  .hcell.today{ outline: 1px solid var(--iron); outline-offset:-1px; }
+
+  .toast{
+    position: fixed; bottom: 22px; right: 22px; background: var(--bg-card); border: 1px solid var(--iron); color: var(--chalk);
+    padding: 10px 16px; border-radius: var(--radius); font-family:'JetBrains Mono', monospace; font-size: 12px;
+    max-width: calc(100vw - 32px);
+    transform: translateY(20px); opacity: 0; transition: all .25s ease; pointer-events:none; z-index: 50;
+  }
+  .toast.show{ transform: translateY(0); opacity: 1; }
+  @media (max-width: 480px){
+    .toast{ left:16px; right:16px; bottom: calc(16px + env(safe-area-inset-bottom)); max-width:none; text-align:center; }
+  }
+  .hidden{ display:none !important; }
+
+  @media print{
+    header .actions, header .mode-switch, .library, .week-strip, .date-nav{ display:none; }
+    body{ background:#fff; color:#111; }
+    .layout{ grid-template-columns: 1fr; }
+    .plan-card, .food-card, .day-tab, .macro-target-card{ border-color:#ccc; background:#fff; }
+    .plate-bar{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>IRON<span>LOG</span></h1>
+    <div class="tag mono" id="modeTag">Custom Plan Builder</div>
+  </div>
+  <div class="mode-switch">
+    <button id="btnModeTraining" class="active">Training</button>
+    <button id="btnModeNutrition">Nutrition</button>
+  </div>
+  <div class="actions">
+    <button class="small btnLibraryToggle" id="btnLibraryToggle">&#9776; Library</button>
+    <button class="small" id="btnSave">Save</button>
+    <div class="more-wrap" id="moreWrap">
+      <button class="small more-toggle" id="btnMoreToggle">&#8942; More</button>
+      <div class="more-menu" id="moreMenu">
+        <button class="small" id="btnExport">Export JSON</button>
+        <button class="small" id="btnImport">Import JSON</button>
+        <button class="small" id="btnPrint">Print</button>
+        <button class="small danger" id="btnClearDay">Clear Day</button>
+      </div>
+    </div>
+    <input type="file" id="fileImport" accept=".json" style="display:none">
+  </div>
+</header>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+<div class="layout">
+
+  <aside class="library" id="trainingLibrary">
+    <button class="small drawer-close" id="closeTrainingLibrary">&times; Close</button>
+    <h2>Exercise Library</h2>
+    <div class="search-row"><input type="text" id="search" placeholder="Search exercises..."></div>
+    <div class="filter-row" id="filters"></div>
+    <div class="ex-list" id="exList"></div>
+    <div class="add-custom">
+      <h2 style="font-size:15px; margin-bottom:2px;">Add Custom</h2>
+      <input type="text" id="customName" placeholder="Exercise name">
+      <div class="row2">
+        <select id="customGroup"></select>
+        <select id="customType">
+          <option value="compound">Compound</option>
+          <option value="isolation">Isolation</option>
+        </select>
+      </div>
+      <button class="small" id="btnAddCustom" style="width:100%;">+ Add to library</button>
+    </div>
+  </aside>
+
+  <aside class="library hidden" id="nutritionLibrary">
+    <button class="small drawer-close" id="closeNutritionLibrary">&times; Close</button>
+    <h2>Meal Library</h2>
+    <div class="search-row"><input type="text" id="foodSearch" placeholder="Search foods..."></div>
+    <div class="filter-row" id="foodFilters"></div>
+    <div class="ex-list" id="foodList"></div>
+    <div class="add-custom">
+      <h2 style="font-size:15px; margin-bottom:2px;">Add Custom Food</h2>
+      <input type="text" id="foodName" placeholder="Food name">
+      <div class="row2">
+        <select id="foodCategory"></select>
+        <input type="text" id="foodServing" placeholder="Serving (e.g. 1 cup, 100g)">
+      </div>
+      <div class="row4">
+        <input type="number" id="foodCalories" placeholder="Kcal" min="0">
+        <input type="number" id="foodProtein" placeholder="Protein g" min="0">
+        <input type="number" id="foodCarbs" placeholder="Carbs g" min="0">
+        <input type="number" id="foodFat" placeholder="Fat g" min="0">
+      </div>
+      <button class="small" id="btnAddFood" style="width:100%;">+ Add to library</button>
+    </div>
+  </aside>
+
+  <main class="plan-area">
+
+    <div class="date-nav" id="dateNav">
+      <button class="icon-btn" id="btnPrevDay" title="Previous day">&lsaquo;</button>
+      <input type="date" id="dateInput">
+      <button class="icon-btn" id="btnNextDay" title="Next day">&rsaquo;</button>
+      <button class="small" id="btnToday">Today</button>
+      <button class="small" id="btnCopyPrev">Copy Previous Day</button>
+      <button class="small" id="btnHistory">Year View</button>
+    </div>
+
+    <div class="week-strip" id="weekStrip"></div>
+
+    <div id="trainingView">
+      <div class="day-header">
+        <div>
+          <h2 id="dayTitle">-</h2>
+          <div class="day-meta">Drag exercises from the library, or tap them to log this day</div>
+        </div>
+        <input type="text" class="label-input mono" id="dayLabel" placeholder="Label this day (e.g. Push / Legs / Rest)">
+      </div>
+      <div class="drop-zone" id="dropZone">
+        <div class="empty-hint">No exercises logged yet - drag one in from the library</div>
+      </div>
+      <div class="summary-strip" id="summaryStrip"></div>
+    </div>
+
+    <div id="nutritionView" class="hidden">
+      <div class="day-header">
+        <div>
+          <h2 id="dayTitleNutri">-</h2>
+          <div class="day-meta">Drag foods into a meal, or tap to add - adjust servings per item</div>
+        </div>
+        <input type="text" class="label-input mono" id="dayNoteNutri" placeholder="Note for this day (e.g. Refeed / Travel)">
+      </div>
+      <div class="macro-targets" id="macroTargets"></div>
+      <div id="mealSections"></div>
+      <div class="summary-strip nutrition" id="summaryStripNutri"></div>
+    </div>
+
+    <div id="historyView" class="hidden">
+      <div class="history-controls">
+        <button class="icon-btn" id="btnPrevYear">&lsaquo;</button>
+        <h2 id="historyYearLabel">2026</h2>
+        <button class="icon-btn" id="btnNextYear">&rsaquo;</button>
+        <span class="day-meta" id="historyModeLabel">Training history</span>
+      </div>
+      <div class="history-grid" id="historyGrid"></div>
+      <div class="summary-strip" id="historyStats"></div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function pad2(n){ return String(n).padStart(2,'0'); }
+function toKey(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function keyToDate(k){ var p=k.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+function addDays(key, n){ var d=keyToDate(key); d.setDate(d.getDate()+n); return toKey(d); }
+function todayKey(){ return toKey(new Date()); }
+function formatLong(key){
+  var d = keyToDate(key);
+  return d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+var mode = 'training';
+var activeDate = todayKey();
+var historyOpen = false;
+var historyYear = new Date().getFullYear();
+
+var LIB_KEY = 'ironlog_library_v1';
+var FOODLIB_KEY = 'ironlog_foodlibrary_v1';
+var TARGETS_KEY = 'ironlog_targets_v1';
+var TRAINING_LOG_KEY = 'ironlog_training_log_v1';
+var NUTRITION_LOG_KEY = 'ironlog_nutrition_log_v1';
+
+var toastTimer;
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+}
+
+var MUSCLE_GROUPS = ['Chest','Back','Legs','Shoulders','Arms','Core','Full Body'];
+var DEFAULT_LIBRARY = [
+  {id:'bench-press', name:'Barbell Bench Press', group:'Chest', type:'compound'},
+  {id:'incline-db-press', name:'Incline Dumbbell Press', group:'Chest', type:'compound'},
+  {id:'cable-fly', name:'Cable Fly', group:'Chest', type:'isolation'},
+  {id:'push-up', name:'Push-Up', group:'Chest', type:'compound'},
+  {id:'deadlift', name:'Conventional Deadlift', group:'Back', type:'compound'},
+  {id:'pull-up', name:'Pull-Up', group:'Back', type:'compound'},
+  {id:'barbell-row', name:'Barbell Row', group:'Back', type:'compound'},
+  {id:'lat-pulldown', name:'Lat Pulldown', group:'Back', type:'compound'},
+  {id:'seated-row', name:'Seated Cable Row', group:'Back', type:'compound'},
+  {id:'squat', name:'Back Squat', group:'Legs', type:'compound'},
+  {id:'front-squat', name:'Front Squat', group:'Legs', type:'compound'},
+  {id:'leg-press', name:'Leg Press', group:'Legs', type:'compound'},
+  {id:'rdl', name:'Romanian Deadlift', group:'Legs', type:'compound'},
+  {id:'leg-curl', name:'Leg Curl', group:'Legs', type:'isolation'},
+  {id:'leg-extension', name:'Leg Extension', group:'Legs', type:'isolation'},
+  {id:'calf-raise', name:'Standing Calf Raise', group:'Legs', type:'isolation'},
+  {id:'ohp', name:'Overhead Press', group:'Shoulders', type:'compound'},
+  {id:'lateral-raise', name:'Lateral Raise', group:'Shoulders', type:'isolation'},
+  {id:'rear-delt-fly', name:'Rear Delt Fly', group:'Shoulders', type:'isolation'},
+  {id:'face-pull', name:'Face Pull', group:'Shoulders', type:'isolation'},
+  {id:'barbell-curl', name:'Barbell Curl', group:'Arms', type:'isolation'},
+  {id:'hammer-curl', name:'Hammer Curl', group:'Arms', type:'isolation'},
+  {id:'tricep-pushdown', name:'Tricep Pushdown', group:'Arms', type:'isolation'},
+  {id:'skull-crusher', name:'Skull Crusher', group:'Arms', type:'isolation'},
+  {id:'plank', name:'Plank', group:'Core', type:'isolation'},
+  {id:'hanging-leg-raise', name:'Hanging Leg Raise', group:'Core', type:'isolation'},
+  {id:'cable-crunch', name:'Cable Crunch', group:'Core', type:'isolation'},
+  {id:'russian-twist', name:'Russian Twist', group:'Core', type:'isolation'},
+  {id:'kettlebell-swing', name:'Kettlebell Swing', group:'Full Body', type:'compound'},
+  {id:'clean-and-press', name:'Clean and Press', group:'Full Body', type:'compound'},
+  {id:'burpee', name:'Burpee', group:'Full Body', type:'compound'}
+];
+
+var library = loadLibrary();
+var activeFilter = null;
+function loadLibrary(){ try{ var s=localStorage.getItem(LIB_KEY); if(s) return JSON.parse(s); }catch(e){} return DEFAULT_LIBRARY.slice(); }
+function saveLibrary(){ localStorage.setItem(LIB_KEY, JSON.stringify(library)); }
+
+var trainingLog = loadTrainingLog();
+function loadTrainingLog(){ try{ var s=localStorage.getItem(TRAINING_LOG_KEY); if(s) return JSON.parse(s); }catch(e){} return {}; }
+function saveTrainingLog(){ localStorage.setItem(TRAINING_LOG_KEY, JSON.stringify(trainingLog)); }
+function getTrainingEntry(key){ if(!trainingLog[key]) trainingLog[key] = {label:'', exercises:[]}; return trainingLog[key]; }
+function hasTrainingData(key){ return !!(trainingLog[key] && trainingLog[key].exercises.length); }
+
+var FOOD_CATEGORIES = ['Protein','Carbs','Dairy','Legumes','Fruits','Vegetables','Fats & Nuts','Beverages'];
+var MEALS = ['Breakfast','Lunch','Dinner','Snacks'];
+var DEFAULT_FOOD_LIBRARY = [
+  {id:'chicken-breast', name:'Chicken Breast (cooked)', category:'Protein', serving:'100g', calories:165, protein:31, carbs:0, fat:3.6},
+  {id:'egg', name:'Egg, whole', category:'Protein', serving:'1 large', calories:78, protein:6, carbs:0.6, fat:5},
+  {id:'egg-white', name:'Egg White', category:'Protein', serving:'1 large', calories:17, protein:3.6, carbs:0.2, fat:0.1},
+  {id:'paneer', name:'Paneer', category:'Protein', serving:'100g', calories:265, protein:18, carbs:1.2, fat:20},
+  {id:'tofu', name:'Tofu', category:'Protein', serving:'100g', calories:76, protein:8, carbs:1.9, fat:4.8},
+  {id:'salmon', name:'Salmon (cooked)', category:'Protein', serving:'100g', calories:208, protein:22, carbs:0, fat:13},
+  {id:'whey', name:'Whey Protein', category:'Protein', serving:'1 scoop (30g)', calories:120, protein:24, carbs:3, fat:1.5},
+  {id:'greek-yogurt', name:'Greek Yogurt', category:'Dairy', serving:'170g', calories:100, protein:17, carbs:6, fat:0.7},
+  {id:'milk', name:'Milk', category:'Dairy', serving:'1 cup (240ml)', calories:122, protein:8, carbs:12, fat:4.8},
+  {id:'curd', name:'Curd / Plain Yogurt', category:'Dairy', serving:'1 cup', calories:98, protein:11, carbs:8, fat:2.2},
+  {id:'cheese', name:'Cheddar Cheese', category:'Dairy', serving:'1 slice (28g)', calories:113, protein:7, carbs:0.4, fat:9},
+  {id:'rice', name:'White Rice (cooked)', category:'Carbs', serving:'1 cup', calories:205, protein:4.3, carbs:45, fat:0.4},
+  {id:'brown-rice', name:'Brown Rice (cooked)', category:'Carbs', serving:'1 cup', calories:216, protein:5, carbs:45, fat:1.8},
+  {id:'roti', name:'Roti / Chapati', category:'Carbs', serving:'1 medium', calories:71, protein:2.6, carbs:15, fat:0.4},
+  {id:'oats', name:'Oats (dry)', category:'Carbs', serving:'1/2 cup (40g)', calories:150, protein:5, carbs:27, fat:2.5},
+  {id:'sweet-potato', name:'Sweet Potato', category:'Carbs', serving:'1 medium', calories:112, protein:2, carbs:26, fat:0.1},
+  {id:'quinoa', name:'Quinoa (cooked)', category:'Carbs', serving:'1 cup', calories:222, protein:8, carbs:39, fat:3.6},
+  {id:'bread', name:'Whole Wheat Bread', category:'Carbs', serving:'1 slice', calories:81, protein:4, carbs:14, fat:1.1},
+  {id:'chole', name:'Chickpeas / Chole (cooked)', category:'Legumes', serving:'1 cup', calories:269, protein:14.5, carbs:45, fat:4.3},
+  {id:'dal', name:'Dal (cooked)', category:'Legumes', serving:'1 cup', calories:230, protein:18, carbs:40, fat:1},
+  {id:'black-beans', name:'Black Beans (cooked)', category:'Legumes', serving:'1 cup', calories:227, protein:15, carbs:41, fat:0.9},
+  {id:'rajma', name:'Rajma / Kidney Beans (cooked)', category:'Legumes', serving:'1 cup', calories:225, protein:15, carbs:40, fat:0.9},
+  {id:'banana', name:'Banana', category:'Fruits', serving:'1 medium', calories:105, protein:1.3, carbs:27, fat:0.4},
+  {id:'apple', name:'Apple', category:'Fruits', serving:'1 medium', calories:95, protein:0.5, carbs:25, fat:0.3},
+  {id:'orange', name:'Orange', category:'Fruits', serving:'1 medium', calories:62, protein:1.2, carbs:15, fat:0.2},
+  {id:'mango', name:'Mango', category:'Fruits', serving:'1 cup sliced', calories:99, protein:1.4, carbs:25, fat:0.6},
+  {id:'broccoli', name:'Broccoli (cooked)', category:'Vegetables', serving:'1 cup', calories:55, protein:3.7, carbs:11, fat:0.6},
+  {id:'spinach', name:'Spinach (cooked)', category:'Vegetables', serving:'1 cup', calories:41, protein:5.3, carbs:6.8, fat:0.5},
+  {id:'mixed-veg', name:'Mixed Vegetables', category:'Vegetables', serving:'1 cup', calories:60, protein:3, carbs:12, fat:0.3},
+  {id:'salad', name:'Green Salad (no dressing)', category:'Vegetables', serving:'2 cups', calories:20, protein:1.5, carbs:4, fat:0.2},
+  {id:'almonds', name:'Almonds', category:'Fats & Nuts', serving:'28g (~23 nuts)', calories:164, protein:6, carbs:6, fat:14},
+  {id:'peanut-butter', name:'Peanut Butter', category:'Fats & Nuts', serving:'2 tbsp', calories:190, protein:8, carbs:6, fat:16},
+  {id:'avocado', name:'Avocado', category:'Fats & Nuts', serving:'1/2 medium', calories:120, protein:1.5, carbs:6, fat:11},
+  {id:'olive-oil', name:'Olive Oil', category:'Fats & Nuts', serving:'1 tbsp', calories:119, protein:0, carbs:0, fat:13.5},
+  {id:'protein-bar', name:'Protein Bar', category:'Carbs', serving:'1 bar', calories:200, protein:20, carbs:22, fat:7},
+  {id:'black-coffee', name:'Black Coffee', category:'Beverages', serving:'1 cup', calories:2, protein:0.3, carbs:0, fat:0},
+  {id:'green-tea', name:'Green Tea', category:'Beverages', serving:'1 cup', calories:2, protein:0, carbs:0, fat:0},
+  {id:'protein-shake', name:'Protein Shake (whey + milk)', category:'Beverages', serving:'1 shake', calories:230, protein:30, carbs:12, fat:5}
+];
+
+var foodLibrary = loadFoodLibrary();
+var activeFoodFilter = null;
+function loadFoodLibrary(){ try{ var s=localStorage.getItem(FOODLIB_KEY); if(s) return JSON.parse(s); }catch(e){} return DEFAULT_FOOD_LIBRARY.slice(); }
+function saveFoodLibrary(){ localStorage.setItem(FOODLIB_KEY, JSON.stringify(foodLibrary)); }
+
+var nutritionLog = loadNutritionLog();
+function loadNutritionLog(){ try{ var s=localStorage.getItem(NUTRITION_LOG_KEY); if(s) return JSON.parse(s); }catch(e){} return {}; }
+function saveNutritionLog(){ localStorage.setItem(NUTRITION_LOG_KEY, JSON.stringify(nutritionLog)); }
+function getNutritionEntry(key){
+  if(!nutritionLog[key]){ nutritionLog[key] = {note:'', meals:{}}; }
+  MEALS.forEach(function(m){ if(!nutritionLog[key].meals[m]) nutritionLog[key].meals[m] = []; });
+  return nutritionLog[key];
+}
+function hasNutritionData(key){ return !!(nutritionLog[key] && MEALS.some(function(m){ return (nutritionLog[key].meals[m]||[]).length; })); }
+
+var targets = loadTargets();
+function loadTargets(){ try{ var s=localStorage.getItem(TARGETS_KEY); if(s) return JSON.parse(s); }catch(e){} return {calories:2200, protein:150, carbs:220, fat:70}; }
+function saveTargets(){ localStorage.setItem(TARGETS_KEY, JSON.stringify(targets)); }
+
+function migrateLegacyData(){
+  if(localStorage.getItem('ironlog_migrated_v1')) return;
+  try{
+    var legacyPlan = JSON.parse(localStorage.getItem('ironlog_plan_v1') || 'null');
+    var legacyNutri = JSON.parse(localStorage.getItem('ironlog_nutrition_v1') || 'null');
+    if(legacyPlan || legacyNutri){
+      var DOW = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      var today = new Date();
+      var dow = today.getDay();
+      var monday = new Date(today); monday.setDate(today.getDate() - ((dow+6)%7));
+      var migratedAny = false;
+      for(var i=0;i<7;i++){
+        var d = new Date(monday); d.setDate(monday.getDate()+i);
+        var key = toKey(d);
+        var wd = DOW[d.getDay()];
+        if(legacyPlan && legacyPlan[wd] && legacyPlan[wd].exercises && legacyPlan[wd].exercises.length && !trainingLog[key]){
+          trainingLog[key] = JSON.parse(JSON.stringify(legacyPlan[wd]));
+          migratedAny = true;
+        }
+        if(legacyNutri && legacyNutri[wd]){
+          var hasFood = MEALS.some(function(m){ return (legacyNutri[wd].meals[m]||[]).length; });
+          if(hasFood && !nutritionLog[key]){
+            nutritionLog[key] = JSON.parse(JSON.stringify(legacyNutri[wd]));
+            migratedAny = true;
+          }
+        }
+      }
+      if(migratedAny){
+        saveTrainingLog(); saveNutritionLog();
+        showToast('Brought your existing weekly plan into this week\'s log');
+      }
+    }
+  }catch(e){}
+  localStorage.setItem('ironlog_migrated_v1', '1');
+}
+
+function setMode(newMode){
+  mode = newMode;
+  var isNutri = mode === 'nutrition';
+  document.getElementById('btnModeTraining').classList.toggle('active', !isNutri);
+  document.getElementById('btnModeNutrition').classList.toggle('active', isNutri);
+  document.getElementById('btnModeNutrition').classList.toggle('nutrition-active', isNutri);
+  document.getElementById('trainingLibrary').classList.toggle('hidden', isNutri);
+  document.getElementById('nutritionLibrary').classList.toggle('hidden', !isNutri);
+  document.getElementById('modeTag').textContent = isNutri ? 'Meal & Macro Tracker' : 'Custom Plan Builder';
+  closeLibraryDrawer();
+  if(historyOpen){
+    toggleHistory(true);
+  } else {
+    document.getElementById('trainingView').classList.toggle('hidden', isNutri);
+    document.getElementById('nutritionView').classList.toggle('hidden', !isNutri);
+  }
+  renderAll();
+}
+document.getElementById('btnModeTraining').addEventListener('click', function(){ setMode('training'); });
+document.getElementById('btnModeNutrition').addEventListener('click', function(){ setMode('nutrition'); });
+
+function renderDateStrip(){
+  document.getElementById('dateInput').value = activeDate;
+  var strip = document.getElementById('weekStrip');
+  strip.innerHTML = '';
+  var isNutri = mode === 'nutrition';
+  for(var offset=-3; offset<=3; offset++){
+    (function(offset){
+      var key = addDays(activeDate, offset);
+      var d = keyToDate(key);
+      var count, pct, extraLabel;
+      if(isNutri){
+        var entry = nutritionLog[key];
+        var allFoods = entry ? MEALS.reduce(function(a,m){ return a.concat(entry.meals[m]||[]); },[]) : [];
+        count = allFoods.length;
+        var kcal = allFoods.reduce(function(s,f){ return s + (Number(f.calories)||0)*(Number(f.qty)||0); }, 0);
+        pct = Math.min(100, Math.round((kcal / (targets.calories||2200)) * 100));
+        extraLabel = kcal ? Math.round(kcal) + ' kcal' : '';
+      } else {
+        var tEntry = trainingLog[key];
+        var exs = tEntry ? tEntry.exercises : [];
+        count = exs.length;
+        var totalVolume = exs.reduce(function(s,e){ return s + (Number(e.sets)||0)*(Number(e.reps)||0)*(Number(e.weight)||0); }, 0);
+        pct = Math.min(100, Math.round((totalVolume/4000)*100));
+        extraLabel = (tEntry && tEntry.label) ? tEntry.label : '';
+      }
+      var tab = document.createElement('div');
+      tab.className = 'day-tab'
+        + (key === activeDate ? (isNutri ? ' active nutrition-active' : ' active') : '')
+        + (key === todayKey() ? ' is-today' : '');
+      tab.innerHTML =
+        '<div class="dname">' + d.toLocaleDateString('en-US',{weekday:'short'}) + '</div>' +
+        '<div class="ddate mono">' + d.getDate() + '/' + (d.getMonth()+1) + '</div>' +
+        '<div class="dcount mono">' + count + ' ' + (isNutri ? 'items' : 'ex') + (extraLabel ? ' &middot; ' + escapeHtml(String(extraLabel)) : '') + '</div>' +
+        '<div class="load-bar' + (isNutri ? ' nutrition' : '') + '"><div style="width:' + pct + '%"></div></div>';
+      tab.onclick = function(){ activeDate = key; renderAll(); };
+      strip.appendChild(tab);
+    })(offset);
+  }
+}
+
+document.getElementById('dateInput').addEventListener('change', function(e){ if(e.target.value){ activeDate = e.target.value; renderAll(); } });
+document.getElementById('btnPrevDay').addEventListener('click', function(){ activeDate = addDays(activeDate,-1); renderAll(); });
+document.getElementById('btnNextDay').addEventListener('click', function(){ activeDate = addDays(activeDate,1); renderAll(); });
+document.getElementById('btnToday').addEventListener('click', function(){ activeDate = todayKey(); renderAll(); });
+
+document.getElementById('btnCopyPrev').addEventListener('click', function(){
+  var prevKey = addDays(activeDate,-1);
+  if(mode === 'training'){
+    var prev = trainingLog[prevKey];
+    if(!prev || !prev.exercises.length){ showToast('Previous day has nothing to copy'); return; }
+    var current = getTrainingEntry(activeDate);
+    if(current.exercises.length && !confirm('Replace today\'s training log with yesterday\'s? This cannot be undone.')) return;
+    trainingLog[activeDate] = JSON.parse(JSON.stringify(prev));
+    saveTrainingLog();
+  } else {
+    var prevN = nutritionLog[prevKey];
+    var prevHasFood = prevN && MEALS.some(function(m){ return (prevN.meals[m]||[]).length; });
+    if(!prevHasFood){ showToast('Previous day has nothing to copy'); return; }
+    var currentN = getNutritionEntry(activeDate);
+    var currentHasFood = MEALS.some(function(m){ return currentN.meals[m].length; });
+    if(currentHasFood && !confirm('Replace today\'s meal log with yesterday\'s? This cannot be undone.')) return;
+    nutritionLog[activeDate] = JSON.parse(JSON.stringify(prevN));
+    saveNutritionLog();
+  }
+  renderAll();
+  showToast('Copied from previous day');
+});
+
+function hasData(key){ return mode === 'training' ? hasTrainingData(key) : hasNutritionData(key); }
+
+function computeCurrentStreak(){
+  var streak = 0, cursor = todayKey();
+  while(hasData(cursor)){ streak++; cursor = addDays(cursor,-1); }
+  return streak;
+}
+function computeLongestStreak(){
+  var keys = Object.keys(mode === 'training' ? trainingLog : nutritionLog).filter(hasData).sort();
+  if(!keys.length) return 0;
+  var longest = 1, cur = 1;
+  for(var i=1;i<keys.length;i++){
+    if(addDays(keys[i-1],1) === keys[i]){ cur++; longest = Math.max(longest, cur); } else cur = 1;
+  }
+  return longest;
+}
+function totalLoggedDays(){ return Object.keys(mode === 'training' ? trainingLog : nutritionLog).filter(hasData).length; }
+function totalVolumeAllTime(){
+  var all = [];
+  Object.keys(trainingLog).forEach(function(k){ all = all.concat(trainingLog[k].exercises); });
+  return all.reduce(function(s,e){ return s + (Number(e.sets)||0)*(Number(e.reps)||0)*(Number(e.weight)||0); }, 0);
+}
+function avgKcalPerLoggedDay(){
+  var keys = Object.keys(nutritionLog).filter(hasNutritionData);
+  if(!keys.length) return 0;
+  var total = keys.reduce(function(s,k){
+    var allFoods = MEALS.reduce(function(a,m){ return a.concat(nutritionLog[k].meals[m]||[]); },[]);
+    return s + allFoods.reduce(function(ss,f){ return ss + (Number(f.calories)||0)*(Number(f.qty)||0); }, 0);
+  }, 0);
+  return Math.round(total/keys.length);
+}
+
+function toggleHistory(show){
+  historyOpen = show;
+  document.getElementById('historyView').classList.toggle('hidden', !show);
+  document.getElementById('weekStrip').classList.toggle('hidden', show);
+  document.getElementById('dateNav').classList.toggle('hidden', show);
+  document.getElementById('trainingView').classList.toggle('hidden', show || mode !== 'training');
+  document.getElementById('nutritionView').classList.toggle('hidden', show || mode !== 'nutrition');
+  document.getElementById('historyModeLabel').textContent = mode === 'training' ? 'Training history' : 'Meal history';
+  if(show) renderHistory();
+}
+document.getElementById('btnHistory').addEventListener('click', function(){ toggleHistory(!historyOpen); });
+document.getElementById('btnPrevYear').addEventListener('click', function(){ historyYear--; renderHistory(); });
+document.getElementById('btnNextYear').addEventListener('click', function(){ historyYear++; renderHistory(); });
+
+function renderHistory(){
+  document.getElementById('historyYearLabel').textContent = historyYear;
+  document.getElementById('historyModeLabel').textContent = mode === 'training' ? 'Training history' : 'Meal history';
+  var baseColor = mode === 'training' ? '232,98,44' : '127,154,111';
+  var grid = document.getElementById('historyGrid');
+  grid.innerHTML = '';
+  for(var m=0; m<12; m++){
+    var monthName = new Date(historyYear, m, 1).toLocaleDateString('en-US', {month:'long'});
+    var firstDay = new Date(historyYear, m, 1).getDay();
+    var daysInMonth = new Date(historyYear, m+1, 0).getDate();
+    var cellsHtml = '';
+    for(var i=0;i<firstDay;i++) cellsHtml += '<div class="hcell empty"></div>';
+    for(var day=1; day<=daysInMonth; day++){
+      var key = historyYear + '-' + pad2(m+1) + '-' + pad2(day);
+      var active = hasData(key);
+      var intensity = 0;
+      if(active){
+        if(mode === 'training'){
+          var vol = (trainingLog[key].exercises||[]).reduce(function(s,e){ return s + (Number(e.sets)||0)*(Number(e.reps)||0)*(Number(e.weight)||0); }, 0);
+          intensity = Math.min(3, Math.max(1, Math.ceil(vol/1500)));
+        } else {
+          var kcal = MEALS.reduce(function(a,mm){ return a.concat(nutritionLog[key].meals[mm]||[]); },[]).reduce(function(s,f){ return s + (Number(f.calories)||0)*(Number(f.qty)||0); }, 0);
+          intensity = Math.min(3, Math.max(1, Math.ceil(kcal/1000)));
+        }
+      }
+      var isToday = key === todayKey();
+      var style = active ? ('style="background:rgba(' + baseColor + ',' + Math.min(0.9, 0.22*intensity + 0.14) + ')"') : '';
+      cellsHtml += '<div class="hcell' + (active?' active':'') + (isToday?' today':'') + '" data-key="' + key + '" title="' + key + '" ' + style + '>' + day + '</div>';
+    }
+    var monthDiv = document.createElement('div');
+    monthDiv.className = 'history-month';
+    monthDiv.innerHTML = '<div class="hmonth-title">' + monthName + '</div><div class="hmonth-grid">' + cellsHtml + '</div>';
+    grid.appendChild(monthDiv);
+  }
+  grid.querySelectorAll('.hcell[data-key]').forEach(function(cell){
+    cell.addEventListener('click', function(){
+      activeDate = cell.dataset.key;
+      toggleHistory(false);
+      renderAll();
+    });
+  });
+
+  document.getElementById('historyStats').innerHTML =
+    '<div class="stat"><div class="num">' + totalLoggedDays() + '</div><div class="lbl">Days logged (all time)</div></div>' +
+    '<div class="stat"><div class="num">' + computeCurrentStreak() + '</div><div class="lbl">Current streak</div></div>' +
+    '<div class="stat"><div class="num">' + computeLongestStreak() + '</div><div class="lbl">Longest streak</div></div>' +
+    '<div class="stat"><div class="num">' + (mode === 'training' ? totalVolumeAllTime().toLocaleString() : avgKcalPerLoggedDay()) + '</div><div class="lbl">' + (mode === 'training' ? 'Total volume (kg), all time' : 'Avg kcal / logged day') + '</div></div>';
+}
+
+function renderFilters(){
+  var wrap = document.getElementById('filters');
+  wrap.innerHTML = '';
+  MUSCLE_GROUPS.forEach(function(g){
+    var chip = document.createElement('div');
+    chip.className = 'chip' + (activeFilter === g ? ' active' : '');
+    chip.textContent = g;
+    chip.onclick = function(){ activeFilter = activeFilter === g ? null : g; renderFilters(); renderLibrary(); };
+    wrap.appendChild(chip);
+  });
+}
+function renderLibrary(){
+  var list = document.getElementById('exList');
+  var q = document.getElementById('search').value.trim().toLowerCase();
+  list.innerHTML = '';
+  library
+    .filter(function(ex){ return !activeFilter || ex.group === activeFilter; })
+    .filter(function(ex){ return !q || ex.name.toLowerCase().indexOf(q) !== -1; })
+    .forEach(function(ex){
+      var item = document.createElement('div');
+      item.className = 'ex-item';
+      item.draggable = true;
+      item.innerHTML = '<div class="name">' + escapeHtml(ex.name) + '</div><div class="meta">' + ex.group + ' &middot; ' + ex.type + '</div>';
+      item.addEventListener('dragstart', function(e){ item.classList.add('dragging'); e.dataTransfer.setData('text/plain', JSON.stringify({kind:'exercise', id:ex.id})); });
+      item.addEventListener('dragend', function(){ item.classList.remove('dragging'); });
+      item.addEventListener('click', function(){
+        addExerciseToDay(ex);
+        if(window.innerWidth <= 900) closeLibraryDrawer();
+        showToast('Added "' + ex.name + '"');
+      });
+      list.appendChild(item);
+    });
+}
+function populateGroupSelect(){ document.getElementById('customGroup').innerHTML = MUSCLE_GROUPS.map(function(g){ return '<option value="'+g+'">'+g+'</option>'; }).join(''); }
+
+function renderDay(){
+  var entry = getTrainingEntry(activeDate);
+  document.getElementById('dayTitle').textContent = formatLong(activeDate);
+  var labelInput = document.getElementById('dayLabel');
+  labelInput.value = entry.label || '';
+  labelInput.oninput = function(){ entry.label = labelInput.value; saveTrainingLog(); renderDateStrip(); };
+
+  var zone = document.getElementById('dropZone');
+  zone.innerHTML = '';
+  if(entry.exercises.length === 0){
+    zone.innerHTML = '<div class="empty-hint">No exercises logged yet - drag one in from the library, or tap it</div>';
+  }
+  entry.exercises.forEach(function(ex, idx){
+    var card = document.createElement('div');
+    card.className = 'plan-card' + (ex.type === 'compound' ? ' compound' : '');
+    var volume = (Number(ex.sets)||0)*(Number(ex.reps)||0)*(Number(ex.weight)||0);
+    var pct = Math.min(100, Math.round((volume/1500)*100));
+    card.innerHTML =
+      '<div class="top-row"><div><div class="ex-title">' + escapeHtml(ex.name) + '</div><div class="ex-sub">' + ex.group + ' &middot; ' + ex.type + '</div></div>' +
+      '<button class="remove-card" title="Remove exercise">&times;</button></div>' +
+      '<div class="field-grid">' +
+      '<div class="field"><label>Sets</label><input type="number" min="0" class="mono" data-field="sets" value="' + (ex.sets ?? '') + '"></div>' +
+      '<div class="field"><label>Reps</label><input type="number" min="0" class="mono" data-field="reps" value="' + (ex.reps ?? '') + '"></div>' +
+      '<div class="field"><label>Weight (kg)</label><input type="number" min="0" class="mono" data-field="weight" value="' + (ex.weight ?? '') + '"></div>' +
+      '<div class="field"><label>Rest (sec)</label><input type="number" min="0" class="mono" data-field="rest" value="' + (ex.rest ?? '') + '"></div>' +
+      '<div class="field"><label>Notes</label><input type="text" data-field="notes" value="' + escapeAttr(ex.notes || '') + '" placeholder="Tempo, cue, superset..."></div>' +
+      '</div><div class="plate-bar"><div style="width:' + pct + '%"></div></div>';
+    card.querySelectorAll('input').forEach(function(inp){
+      inp.addEventListener('input', function(){
+        ex[inp.dataset.field] = inp.dataset.field === 'notes' ? inp.value : Number(inp.value);
+        saveTrainingLog();
+        renderDateStrip();
+        renderSummary();
+        var v = (Number(ex.sets)||0)*(Number(ex.reps)||0)*(Number(ex.weight)||0);
+        card.querySelector('.plate-bar > div').style.width = Math.min(100, Math.round((v/1500)*100)) + '%';
+      });
+    });
+    card.querySelector('.remove-card').onclick = function(){ entry.exercises.splice(idx,1); saveTrainingLog(); renderAll(); };
+    zone.appendChild(card);
+  });
+
+  zone.ondragover = function(e){ e.preventDefault(); zone.classList.add('drag-over'); };
+  zone.ondragleave = function(){ zone.classList.remove('drag-over'); };
+  zone.ondrop = function(e){
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    try{
+      var data = JSON.parse(e.dataTransfer.getData('text/plain'));
+      if(data.kind === 'exercise'){ var ex = library.find(function(x){ return x.id === data.id; }); if(ex) addExerciseToDay(ex); }
+    }catch(err){}
+  };
+}
+function addExerciseToDay(ex){
+  var entry = getTrainingEntry(activeDate);
+  entry.exercises.push({name: ex.name, group: ex.group, type: ex.type, sets:3, reps:10, weight:0, rest:60, notes:''});
+  saveTrainingLog();
+  renderAll();
+}
+function renderSummary(){
+  var strip = document.getElementById('summaryStrip');
+  var keys = []; for(var o=-3;o<=3;o++) keys.push(addDays(activeDate,o));
+  var weekExercises = [];
+  keys.forEach(function(k){ if(trainingLog[k]) weekExercises = weekExercises.concat(trainingLog[k].exercises); });
+  var totalExercises = weekExercises.length;
+  var totalSets = weekExercises.reduce(function(s,e){ return s + (Number(e.sets)||0); }, 0);
+  var totalVolume = weekExercises.reduce(function(s,e){ return s + (Number(e.sets)||0)*(Number(e.reps)||0)*(Number(e.weight)||0); }, 0);
+  var groupsHit = new Set(weekExercises.map(function(e){ return e.group; })).size;
+  strip.innerHTML =
+    '<div class="stat"><div class="num">' + totalExercises + '</div><div class="lbl">Exercises (7-day window)</div></div>' +
+    '<div class="stat"><div class="num">' + totalSets + '</div><div class="lbl">Total sets</div></div>' +
+    '<div class="stat"><div class="num">' + totalVolume.toLocaleString() + '</div><div class="lbl">Volume (kg)</div></div>' +
+    '<div class="stat"><div class="num">' + groupsHit + '/' + MUSCLE_GROUPS.length + '</div><div class="lbl">Muscle groups covered</div></div>';
+}
+
+function renderFoodFilters(){
+  var wrap = document.getElementById('foodFilters');
+  wrap.innerHTML = '';
+  FOOD_CATEGORIES.forEach(function(c){
+    var chip = document.createElement('div');
+    chip.className = 'chip nutrition' + (activeFoodFilter === c ? ' active' : '');
+    chip.textContent = c;
+    chip.onclick = function(){ activeFoodFilter = activeFoodFilter === c ? null : c; renderFoodFilters(); renderFoodLibrary(); };
+    wrap.appendChild(chip);
+  });
+}
+function renderFoodLibrary(){
+  var list = document.getElementById('foodList');
+  var q = document.getElementById('foodSearch').value.trim().toLowerCase();
+  list.innerHTML = '';
+  foodLibrary
+    .filter(function(f){ return !activeFoodFilter || f.category === activeFoodFilter; })
+    .filter(function(f){ return !q || f.name.toLowerCase().indexOf(q) !== -1; })
+    .forEach(function(f){
+      var item = document.createElement('div');
+      item.className = 'ex-item food-item';
+      item.draggable = true;
+      item.innerHTML = '<div class="name">' + escapeHtml(f.name) + '</div><div class="meta">' + f.category + ' &middot; ' + f.serving + ' &middot; ' + f.calories + ' kcal</div>';
+      item.addEventListener('dragstart', function(e){ item.classList.add('dragging'); e.dataTransfer.setData('text/plain', JSON.stringify({kind:'food', id:f.id})); });
+      item.addEventListener('dragend', function(){ item.classList.remove('dragging'); });
+      item.addEventListener('click', function(e){ openMealPicker(f, item); });
+      list.appendChild(item);
+    });
+}
+
+function openMealPicker(f, anchorEl){
+  closeMealPicker();
+  var sheet = document.createElement('div');
+  sheet.className = 'meal-picker-sheet';
+  sheet.innerHTML = '<div class="mp-title">Add "' + escapeHtml(f.name) + '" to:</div>' +
+    '<div class="mp-options">' + MEALS.map(function(m){ return '<button class="small mp-opt" data-meal="'+m+'">'+m+'</button>'; }).join('') + '</div>';
+  document.body.appendChild(sheet);
+  var backdrop = document.getElementById('drawerBackdrop');
+  backdrop.classList.add('show');
+  backdrop.onclick = closeMealPicker;
+  sheet.querySelectorAll('.mp-opt').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      addFoodToMeal(f, btn.dataset.meal);
+      closeMealPicker();
+      if(window.innerWidth <= 900) closeLibraryDrawer();
+      showToast('Added to ' + btn.dataset.meal);
+    });
+  });
+}
+function closeMealPicker(){
+  document.querySelectorAll('.meal-picker-sheet').forEach(function(s){ s.remove(); });
+  var backdrop = document.getElementById('drawerBackdrop');
+  if(!document.querySelector('.library.drawer-open')) backdrop.classList.remove('show');
+  backdrop.onclick = closeLibraryDrawer;
+}
+function populateCategorySelect(){ document.getElementById('foodCategory').innerHTML = FOOD_CATEGORIES.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join(''); }
+
+function renderMacroTargets(){
+  var wrap = document.getElementById('macroTargets');
+  var entry = getNutritionEntry(activeDate);
+  var allFoods = MEALS.reduce(function(a,m){ return a.concat(entry.meals[m]); },[]);
+  var totals = allFoods.reduce(function(acc,f){
+    var qty = Number(f.qty)||0;
+    acc.calories += (Number(f.calories)||0)*qty;
+    acc.protein += (Number(f.protein)||0)*qty;
+    acc.carbs += (Number(f.carbs)||0)*qty;
+    acc.fat += (Number(f.fat)||0)*qty;
+    return acc;
+  }, {calories:0, protein:0, carbs:0, fat:0});
+  var rows = [
+    {key:'calories', label:'Calories', unit:'kcal', cls:'calories'},
+    {key:'protein', label:'Protein', unit:'g', cls:'protein'},
+    {key:'carbs', label:'Carbs', unit:'g', cls:'carbs'},
+    {key:'fat', label:'Fat', unit:'g', cls:'fat'}
+  ];
+  wrap.innerHTML = rows.map(function(r){
+    var total = Math.round(totals[r.key]);
+    var target = targets[r.key] || 1;
+    var pct = Math.min(100, Math.round((total/target)*100));
+    return '<div class="macro-target-card ' + r.cls + '"><div class="row"><span class="name">' + r.label + '</span>' +
+      '<span class="value mono">' + total + '<span style="font-size:11px;color:var(--chalk-dim)"> / </span>' +
+      '<input type="number" class="target-input" data-key="' + r.key + '" value="' + target + '" min="0">' + r.unit + '</span></div>' +
+      '<div class="bar"><div style="width:' + pct + '%"></div></div></div>';
+  }).join('');
+  wrap.querySelectorAll('.target-input').forEach(function(inp){
+    inp.addEventListener('input', function(){ targets[inp.dataset.key] = Number(inp.value); saveTargets(); renderDateStrip(); renderMacroTargets(); });
+  });
+}
+
+function renderMealSections(){
+  var entry = getNutritionEntry(activeDate);
+  document.getElementById('dayTitleNutri').textContent = formatLong(activeDate);
+  var noteInput = document.getElementById('dayNoteNutri');
+  noteInput.value = entry.note || '';
+  noteInput.oninput = function(){ entry.note = noteInput.value; saveNutritionLog(); };
+
+  var wrap = document.getElementById('mealSections');
+  wrap.innerHTML = '';
+  MEALS.forEach(function(meal){
+    var section = document.createElement('div');
+    section.className = 'meal-section';
+    var foods = entry.meals[meal];
+    var kcal = foods.reduce(function(s,f){ return s + (Number(f.calories)||0)*(Number(f.qty)||0); }, 0);
+    var head = document.createElement('div');
+    head.className = 'meal-section-head';
+    head.innerHTML = '<h3>' + meal + '</h3><span class="meal-kcal mono">' + Math.round(kcal) + ' kcal</span>';
+    section.appendChild(head);
+
+    var zone = document.createElement('div');
+    zone.className = 'drop-zone';
+    if(foods.length === 0) zone.innerHTML = '<div class="empty-hint">Drag a food here, or tap one in the library and pick ' + meal + '</div>';
+
+    foods.forEach(function(f, idx){
+      var card = document.createElement('div');
+      card.className = 'food-card';
+      var p = (Number(f.protein)||0)*(Number(f.qty)||0);
+      var c = (Number(f.carbs)||0)*(Number(f.qty)||0);
+      var fat = (Number(f.fat)||0)*(Number(f.qty)||0);
+      var kc = (Number(f.calories)||0)*(Number(f.qty)||0);
+      card.innerHTML =
+        '<div class="top-row"><div><div class="ex-title">' + escapeHtml(f.name) + '</div><div class="ex-sub">' + f.category + ' &middot; ' + f.serving + '</div></div>' +
+        '<button class="remove-card" title="Remove food">&times;</button></div>' +
+        '<div class="food-macros"><div class="field"><label>Servings</label><input type="number" min="0" step="0.25" class="mono" data-field="qty" value="' + f.qty + '"></div>' +
+        '<div class="macro-readout mono"><span><b>' + Math.round(kc) + '</b> kcal</span><span><b>' + Math.round(p) + '</b>p</span><span><b>' + Math.round(c) + '</b>c</span><span><b>' + Math.round(fat) + '</b>f</span></div></div>';
+      card.querySelector('[data-field="qty"]').addEventListener('input', function(e){
+        f.qty = Number(e.target.value);
+        saveNutritionLog();
+        renderDateStrip(); renderMacroTargets(); renderMealSections(); renderNutritionSummary();
+      });
+      card.querySelector('.remove-card').onclick = function(){ entry.meals[meal].splice(idx,1); saveNutritionLog(); renderAll(); };
+      zone.appendChild(card);
+    });
+
+    zone.ondragover = function(e){ e.preventDefault(); zone.classList.add('drag-over','nutrition'); };
+    zone.ondragleave = function(){ zone.classList.remove('drag-over','nutrition'); };
+    zone.ondrop = function(e){
+      e.preventDefault();
+      zone.classList.remove('drag-over','nutrition');
+      try{
+        var data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        if(data.kind === 'food'){ var f = foodLibrary.find(function(x){ return x.id === data.id; }); if(f) addFoodToMeal(f, meal); }
+      }catch(err){}
+    };
+    section.appendChild(zone);
+    wrap.appendChild(section);
+  });
+}
+function addFoodToMeal(f, meal){
+  var entry = getNutritionEntry(activeDate);
+  entry.meals[meal].push({name: f.name, category: f.category, serving: f.serving, calories: f.calories, protein: f.protein, carbs: f.carbs, fat: f.fat, qty: 1});
+  saveNutritionLog();
+  renderAll();
+}
+function renderNutritionSummary(){
+  var strip = document.getElementById('summaryStripNutri');
+  var keys = []; for(var o=-3;o<=3;o++) keys.push(addDays(activeDate,o));
+  var weekFoods = [];
+  keys.forEach(function(k){ if(nutritionLog[k]) MEALS.forEach(function(m){ weekFoods = weekFoods.concat(nutritionLog[k].meals[m]||[]); }); });
+  var totalKcal = weekFoods.reduce(function(s,f){ return s + (Number(f.calories)||0)*(Number(f.qty)||0); }, 0);
+  var totalProtein = weekFoods.reduce(function(s,f){ return s + (Number(f.protein)||0)*(Number(f.qty)||0); }, 0);
+  var daysLogged = keys.filter(function(k){ return hasNutritionData(k); }).length;
+  strip.innerHTML =
+    '<div class="stat"><div class="num">' + Math.round(totalKcal/7) + '</div><div class="lbl">Avg kcal / day (7-day window)</div></div>' +
+    '<div class="stat"><div class="num">' + Math.round(totalProtein/7) + '</div><div class="lbl">Avg protein / day (g)</div></div>' +
+    '<div class="stat"><div class="num">' + weekFoods.length + '</div><div class="lbl">Food entries (7-day window)</div></div>' +
+    '<div class="stat"><div class="num">' + daysLogged + '/7</div><div class="lbl">Days logged (window)</div></div>';
+}
+
+function renderAll(){
+  renderDateStrip();
+  if(historyOpen){ renderHistory(); return; }
+  if(mode === 'training'){ renderDay(); renderSummary(); }
+  else { renderMacroTargets(); renderMealSections(); renderNutritionSummary(); }
+}
+
+document.getElementById('search').addEventListener('input', renderLibrary);
+document.getElementById('foodSearch').addEventListener('input', renderFoodLibrary);
+
+document.getElementById('btnAddCustom').addEventListener('click', function(){
+  var nameInput = document.getElementById('customName');
+  var name = nameInput.value.trim();
+  if(!name){ showToast('Enter an exercise name first'); return; }
+  var group = document.getElementById('customGroup').value;
+  var type = document.getElementById('customType').value;
+  library.push({id:'custom-'+Date.now(), name:name, group:group, type:type});
+  saveLibrary();
+  nameInput.value = '';
+  renderLibrary();
+  showToast('Added "' + name + '" to exercise library');
+});
+
+document.getElementById('btnAddFood').addEventListener('click', function(){
+  var nameInput = document.getElementById('foodName');
+  var name = nameInput.value.trim();
+  if(!name){ showToast('Enter a food name first'); return; }
+  var category = document.getElementById('foodCategory').value;
+  var serving = document.getElementById('foodServing').value.trim() || '1 serving';
+  var calories = Number(document.getElementById('foodCalories').value) || 0;
+  var protein = Number(document.getElementById('foodProtein').value) || 0;
+  var carbs = Number(document.getElementById('foodCarbs').value) || 0;
+  var fat = Number(document.getElementById('foodFat').value) || 0;
+  foodLibrary.push({id:'food-'+Date.now(), name:name, category:category, serving:serving, calories:calories, protein:protein, carbs:carbs, fat:fat});
+  saveFoodLibrary();
+  ['foodName','foodServing','foodCalories','foodProtein','foodCarbs','foodFat'].forEach(function(id){ document.getElementById(id).value = ''; });
+  renderFoodLibrary();
+  showToast('Added "' + name + '" to meal library');
+});
+
+document.getElementById('btnSave').addEventListener('click', function(){
+  saveTrainingLog(); saveNutritionLog(); saveLibrary(); saveFoodLibrary(); saveTargets();
+  showToast('Saved locally - your full history stays in this browser');
+});
+
+document.getElementById('btnExport').addEventListener('click', function(){
+  var data = { trainingLog: trainingLog, nutritionLog: nutritionLog, library: library, foodLibrary: foodLibrary, targets: targets };
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'ironlog-backup-' + todayKey() + '.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported full history as JSON');
+});
+
+document.getElementById('btnImport').addEventListener('click', function(){ document.getElementById('fileImport').click(); });
+document.getElementById('fileImport').addEventListener('change', function(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var data = JSON.parse(reader.result);
+      if(data.trainingLog) trainingLog = data.trainingLog;
+      if(data.nutritionLog) nutritionLog = data.nutritionLog;
+      if(data.library) library = data.library;
+      if(data.foodLibrary) foodLibrary = data.foodLibrary;
+      if(data.targets) targets = data.targets;
+      saveTrainingLog(); saveNutritionLog(); saveLibrary(); saveFoodLibrary(); saveTargets();
+      renderLibrary(); renderFoodLibrary(); renderAll();
+      showToast('History imported');
+    }catch(err){ showToast('Could not read that file'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('btnPrint').addEventListener('click', function(){ window.print(); });
+
+document.getElementById('btnClearDay').addEventListener('click', function(){
+  var what = mode === 'training' ? 'training log' : 'meal log';
+  if(!confirm('Clear the ' + what + ' for ' + formatLong(activeDate) + '? This cannot be undone.')) return;
+  if(mode === 'training'){ trainingLog[activeDate] = {label:'', exercises:[]}; saveTrainingLog(); }
+  else { nutritionLog[activeDate] = {note:'', meals:{}}; MEALS.forEach(function(m){ nutritionLog[activeDate].meals[m] = []; }); saveNutritionLog(); }
+  renderAll();
+});
+
+function openLibraryDrawer(){
+  var el = mode === 'training' ? document.getElementById('trainingLibrary') : document.getElementById('nutritionLibrary');
+  el.classList.add('drawer-open');
+  document.getElementById('drawerBackdrop').classList.add('show');
+  document.getElementById('drawerBackdrop').onclick = closeLibraryDrawer;
+}
+function closeLibraryDrawer(){
+  document.getElementById('trainingLibrary').classList.remove('drawer-open');
+  document.getElementById('nutritionLibrary').classList.remove('drawer-open');
+  if(!document.querySelector('.meal-picker-sheet')) document.getElementById('drawerBackdrop').classList.remove('show');
+}
+document.getElementById('btnLibraryToggle').addEventListener('click', openLibraryDrawer);
+document.getElementById('closeTrainingLibrary').addEventListener('click', closeLibraryDrawer);
+document.getElementById('closeNutritionLibrary').addEventListener('click', closeLibraryDrawer);
+
+function closeMoreMenu(){ document.getElementById('moreMenu').classList.remove('open'); }
+document.getElementById('btnMoreToggle').addEventListener('click', function(e){
+  e.stopPropagation();
+  document.getElementById('moreMenu').classList.toggle('open');
+});
+document.getElementById('moreMenu').addEventListener('click', function(e){
+  if(e.target.tagName === 'BUTTON') closeMoreMenu();
+});
+document.addEventListener('click', function(e){
+  if(!document.getElementById('moreWrap').contains(e.target)) closeMoreMenu();
+});
+
+migrateLegacyData();
+populateGroupSelect();
+populateCategorySelect();
+renderFilters();
+renderFoodFilters();
+renderLibrary();
+renderFoodLibrary();
+renderAll();
+</script>
+</body>
+</html>
