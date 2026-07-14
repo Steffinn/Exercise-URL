@@ -142,6 +142,37 @@
   }
   .library .drawer-close{ display:none; margin-bottom: 14px; }
 
+  .modal-overlay{
+    display:none; position: fixed; inset:0; background: rgba(0,0,0,0.6); z-index: 90;
+    align-items:center; justify-content:center; padding: 20px;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-card{
+    background: var(--bg-panel); border: 1px solid var(--line); border-radius: 8px;
+    width: min(92vw, 520px); max-height: 88vh; overflow-y:auto;
+    padding: 20px 22px calc(20px + env(safe-area-inset-bottom));
+  }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px; }
+  .modal-head h2{ font-family:'Bebas Neue', sans-serif; font-size: 26px; letter-spacing:0.04em; }
+  .modal-sub{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--chalk-dim); line-height:1.6; margin-bottom: 16px; }
+  .modal-body .field{ margin-bottom: 12px; }
+  .modal-body .field label{
+    display:block; font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--chalk-dim);
+    text-transform: uppercase; letter-spacing:0.06em; margin-bottom: 4px;
+  }
+  .pg-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 16px; border-top:1px solid var(--line); padding-top:16px; }
+  .pg-preview{ margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .pg-macros{ display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom: 14px; }
+  .pg-macros > div{ text-align:center; background: var(--bg-card); border:1px solid var(--line); border-radius:var(--radius); padding: 8px 4px; }
+  .pg-macros .num{ display:block; font-family:'Bebas Neue', sans-serif; font-size: 20px; color: var(--iron); }
+  .pg-macros .lbl{ display:block; font-family:'JetBrains Mono', monospace; font-size: 9px; color: var(--chalk-dim); text-transform:uppercase; }
+  .pg-days{ display:flex; flex-direction:column; gap:8px; }
+  .pg-day{ background: var(--bg-card); border: 1px solid var(--line); border-left: 3px solid var(--sage); border-radius: var(--radius); padding: 8px 10px; }
+  .pg-day-title{ font-family:'Bebas Neue', sans-serif; font-size:16px; letter-spacing:0.03em; margin-bottom:4px; }
+  .pg-day-ex{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--chalk-dim); line-height:1.7; }
+  @media (max-width: 560px){ .pg-grid{ grid-template-columns: 1fr; } }
+
   .meal-picker-sheet{
     position: fixed; left:50%; bottom:0; transform: translateX(-50%);
     width: min(94vw, 420px);
@@ -330,6 +361,7 @@
   </div>
   <div class="actions">
     <button class="small btnLibraryToggle" id="btnLibraryToggle">&#9776; Library</button>
+    <button class="small primary" id="btnGeneratePlan">&#9889; Generate Plan</button>
     <button class="small" id="btnSave">Save</button>
     <div class="more-wrap" id="moreWrap">
       <button class="small more-toggle" id="btnMoreToggle">&#8942; More</button>
@@ -446,6 +478,70 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="planModalOverlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Generate Plan</h2>
+      <button class="small" id="btnClosePlanModal">&times; Close</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-sub">Enter your stats and we'll calculate daily calorie/macro targets and build a matching workout split from your exercise library.</p>
+      <div class="pg-grid">
+        <div class="field">
+          <label>Sex</label>
+          <select id="pgSex"><option value="male">Male</option><option value="female">Female</option></select>
+        </div>
+        <div class="field"><label>Age (years)</label><input type="number" id="pgAge" min="14" max="90" value="28"></div>
+        <div class="field"><label>Weight (kg)</label><input type="number" id="pgWeight" min="30" max="250" value="75"></div>
+        <div class="field"><label>Height (cm)</label><input type="number" id="pgHeight" min="120" max="230" value="175"></div>
+      </div>
+      <div class="field">
+        <label>Daily activity (outside training)</label>
+        <select id="pgActivity">
+          <option value="1.2">Sedentary — desk job, little walking</option>
+          <option value="1.375">Lightly active — some walking/standing</option>
+          <option value="1.55" selected>Moderately active</option>
+          <option value="1.725">Very active — physical job</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Primary goal</label>
+        <select id="pgGoal">
+          <option value="lose">Fat loss (calorie deficit)</option>
+          <option value="maintain" selected>Maintain weight / recomp</option>
+          <option value="gain">Muscle gain (calorie surplus)</option>
+        </select>
+      </div>
+      <div class="pg-grid">
+        <div class="field">
+          <label>Training days / week</label>
+          <select id="pgDays">
+            <option value="3">3 days</option>
+            <option value="4" selected>4 days</option>
+            <option value="5">5 days</option>
+            <option value="6">6 days</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Experience</label>
+          <select id="pgExperience">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate" selected>Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Apply starting from</label><input type="date" id="pgStartDate"></div>
+
+      <div class="pg-preview hidden" id="pgPreview"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="small" id="btnPreviewPlan">Preview</button>
+      <button class="small primary" id="btnApplyPlan">Apply to Calendar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 function pad2(n){ return String(n).padStart(2,'0'); }
@@ -901,6 +997,150 @@ function addExerciseToDay(ex){
   saveTrainingLog();
   renderAll();
 }
+
+var SPLIT_MAP = {
+  3: ['Full Body A','Full Body B','Full Body C'],
+  4: ['Upper Body','Lower Body','Upper Body','Lower Body'],
+  5: ['Push','Pull','Legs','Upper Body','Lower Body'],
+  6: ['Push','Pull','Legs','Push','Pull','Legs']
+};
+var FOCUS_GROUPS = {
+  'Full Body A': ['Legs','Chest','Back','Core'],
+  'Full Body B': ['Legs','Shoulders','Back','Arms'],
+  'Full Body C': ['Legs','Chest','Back','Shoulders','Core'],
+  'Upper Body': ['Chest','Back','Shoulders','Arms'],
+  'Lower Body': ['Legs','Core'],
+  'Push': ['Chest','Shoulders','Arms'],
+  'Pull': ['Back','Arms'],
+  'Legs': ['Legs','Core']
+};
+var EXCOUNT_MAP = { beginner:4, intermediate:5, advanced:6 };
+
+function pickExercisesForDay(groups, exCount){
+  var queues = groups.map(function(g){
+    return library.filter(function(e){ return e.group === g; })
+      .slice()
+      .sort(function(a,b){ return (a.type==='compound'?0:1) - (b.type==='compound'?0:1); });
+  });
+  var chosen = [];
+  var usedIds = {};
+  var gi = 0;
+  var guard = 0;
+  while(chosen.length < exCount && guard < 1000){
+    guard++;
+    if(queues.every(function(q){ return q.length === 0; })) break;
+    var q = queues[gi % queues.length];
+    gi++;
+    if(!q.length) continue;
+    var ex = q.shift();
+    var key = ex.id || ex.name;
+    if(usedIds[key]) continue;
+    usedIds[key] = true;
+    chosen.push(ex);
+  }
+  return chosen;
+}
+
+function computeGeneratedPlan(){
+  var sex = document.getElementById('pgSex').value;
+  var age = Number(document.getElementById('pgAge').value) || 28;
+  var weight = Number(document.getElementById('pgWeight').value) || 75;
+  var height = Number(document.getElementById('pgHeight').value) || 175;
+  var activity = Number(document.getElementById('pgActivity').value) || 1.55;
+  var goal = document.getElementById('pgGoal').value;
+  var days = Number(document.getElementById('pgDays').value) || 4;
+  var experience = document.getElementById('pgExperience').value;
+
+  var bmr = sex === 'male'
+    ? (10*weight + 6.25*height - 5*age + 5)
+    : (10*weight + 6.25*height - 5*age - 161);
+  var tdee = bmr * activity;
+  var calAdjust = goal === 'lose' ? -500 : (goal === 'gain' ? 300 : 0);
+  var calories = Math.max(1200, Math.round(tdee + calAdjust));
+  var protein = Math.round(weight * 2.0);
+  var fat = Math.round((calories * 0.25) / 9);
+  var carbs = Math.max(0, Math.round((calories - protein*4 - fat*9) / 4));
+
+  var splitDays = SPLIT_MAP[days] || SPLIT_MAP[4];
+  var exCount = EXCOUNT_MAP[experience] || 5;
+  var repScheme = goal === 'lose' ? {sets:3, reps:14} : (goal === 'gain' ? {sets:4, reps:8} : {sets:3, reps:10});
+
+  var workoutDays = splitDays.map(function(label){
+    var groups = FOCUS_GROUPS[label] || ['Full Body'];
+    var chosen = pickExercisesForDay(groups, exCount);
+    return {
+      label: label,
+      exercises: chosen.map(function(e){
+        var isCompound = e.type === 'compound';
+        return {
+          name: e.name, group: e.group, type: e.type,
+          sets: repScheme.sets,
+          reps: isCompound ? Math.max(6, repScheme.reps - 2) : repScheme.reps,
+          weight: 0,
+          rest: isCompound ? 90 : 60,
+          notes: ''
+        };
+      })
+    };
+  });
+
+  return { calories: calories, protein: protein, carbs: carbs, fat: fat, workoutDays: workoutDays, days: days };
+}
+
+function renderPlanPreview(plan){
+  var el = document.getElementById('pgPreview');
+  el.classList.remove('hidden');
+  var macroHtml = '<div class="pg-macros">' +
+    '<div><span class="num">' + plan.calories + '</span><span class="lbl">kcal / day</span></div>' +
+    '<div><span class="num">' + plan.protein + 'g</span><span class="lbl">Protein</span></div>' +
+    '<div><span class="num">' + plan.carbs + 'g</span><span class="lbl">Carbs</span></div>' +
+    '<div><span class="num">' + plan.fat + 'g</span><span class="lbl">Fat</span></div>' +
+  '</div>';
+  var daysHtml = '<div class="pg-days">' + plan.workoutDays.map(function(d){
+    var exList = d.exercises.length
+      ? d.exercises.map(function(e){ return escapeHtml(e.name) + ' — ' + e.sets + '&times;' + e.reps; }).join('<br>')
+      : '<span style="opacity:0.6">No matching exercises in your library for this focus — add some, then regenerate.</span>';
+    return '<div class="pg-day"><div class="pg-day-title">' + escapeHtml(d.label) + '</div><div class="pg-day-ex">' + exList + '</div></div>';
+  }).join('') + '</div>';
+  el.innerHTML = macroHtml + daysHtml;
+}
+
+function applyGeneratedPlan(plan){
+  var startKey = document.getElementById('pgStartDate').value || todayKey();
+  var dates = [];
+  for(var i=0;i<7;i++) dates.push(addDays(startKey, i));
+  var hasExisting = dates.some(function(k){ return hasTrainingData(k); });
+  if(hasExisting && !confirm('This will overwrite training logs already saved for some of the 7 days starting ' + formatLong(startKey) + '. Continue?')) return;
+
+  dates.forEach(function(k, i){
+    if(i < plan.workoutDays.length){
+      var d = plan.workoutDays[i];
+      trainingLog[k] = { label: d.label, exercises: d.exercises.map(function(e){ return JSON.parse(JSON.stringify(e)); }) };
+    } else {
+      trainingLog[k] = { label: 'Rest', exercises: [] };
+    }
+  });
+  saveTrainingLog();
+
+  targets.calories = plan.calories;
+  targets.protein = plan.protein;
+  targets.carbs = plan.carbs;
+  targets.fat = plan.fat;
+  saveTargets();
+
+  activeDate = startKey;
+  closePlanModal();
+  renderAll();
+  showToast('Plan applied starting ' + formatLong(startKey));
+}
+
+function openPlanModal(){
+  if(!document.getElementById('pgStartDate').value) document.getElementById('pgStartDate').value = todayKey();
+  document.getElementById('pgPreview').classList.add('hidden');
+  document.getElementById('planModalOverlay').classList.add('show');
+}
+function closePlanModal(){ document.getElementById('planModalOverlay').classList.remove('show'); }
+
 function renderSummary(){
   var strip = document.getElementById('summaryStrip');
   var keys = []; for(var o=-3;o<=3;o++) keys.push(addDays(activeDate,o));
@@ -1186,6 +1426,20 @@ function closeLibraryDrawer(){
 document.getElementById('btnLibraryToggle').addEventListener('click', openLibraryDrawer);
 document.getElementById('closeTrainingLibrary').addEventListener('click', closeLibraryDrawer);
 document.getElementById('closeNutritionLibrary').addEventListener('click', closeLibraryDrawer);
+
+document.getElementById('btnGeneratePlan').addEventListener('click', openPlanModal);
+document.getElementById('btnClosePlanModal').addEventListener('click', closePlanModal);
+document.getElementById('planModalOverlay').addEventListener('click', function(e){
+  if(e.target.id === 'planModalOverlay') closePlanModal();
+});
+document.getElementById('btnPreviewPlan').addEventListener('click', function(){
+  renderPlanPreview(computeGeneratedPlan());
+});
+document.getElementById('btnApplyPlan').addEventListener('click', function(){
+  var plan = computeGeneratedPlan();
+  renderPlanPreview(plan);
+  applyGeneratedPlan(plan);
+});
 
 function closeMoreMenu(){ document.getElementById('moreMenu').classList.remove('open'); }
 document.getElementById('btnMoreToggle').addEventListener('click', function(e){
